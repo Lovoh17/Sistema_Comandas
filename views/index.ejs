@@ -1,9 +1,29 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-    <link rel="stylesheet" type="text/css" href="/styles.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nuevo Pedido</title>
+    <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-    <h1>Hello world</h1>
+    <div class="container">
+        <h1>Realiza tu Pedido</h1>
+        <form id="orderForm">
+            <h2>Información del Cliente</h2>
+            <input type="text" id="customerName" placeholder="Tu Nombre" required>
+            <input type="tel" id="customerPhone" placeholder="Tu Teléfono" required>
+
+            <h2>Menú</h2>
+            <div id="menu"></div>
+
+            <h2>Resumen del Pedido</h2>
+            <div id="orderSummary"></div>
+            <h3>Total: $<span id="totalPrice">0.00</span></h3>
+
+            <button type="submit">Confirmar Pedido</button>
+        </form>
+    </div>
+    <script src="/scripts.js"></script>
 </body>
 </html>
