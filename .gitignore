@@ -1,0 +1,14 @@
+# Archivos de entorno
+.env
+.env.local
+
+# Dependencias
+node_modules/
+
+# Lock files
+package-lock.json
+*.lock
+
+# Frontend (opcional)
+frontend/node_modules/
+frontend/package-lock.json
