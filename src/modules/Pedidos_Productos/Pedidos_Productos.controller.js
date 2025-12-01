@@ -1,7 +1,6 @@
 import PedidosProductosService from './Pedidos_Productos.service.js';
 
 class PedidosProductosController {
-  // POST /api/pedidos/:pedido_id/productos
   static async agregar(req, res) {
     try {
       const { pedido_id } = req.params;

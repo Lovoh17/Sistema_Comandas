@@ -4,8 +4,6 @@ import { connectDB, getDB } from "./config/database.js";
 import corsMiddleware from "./config/cors.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 import { runDatabaseMigrations, checkDatabaseStatus } from './scrips/migrate.js';
-
-
 import CategoriaRoutes from "./modules/Categoria/Categoria.routes.js";
 import UsuarioRoutes from "./modules/Usuario/Usuario.routes.js";
 import {Menu_Dias_ProductosRoutes, pedidosProductosRoutes, PedidoRoutes, GananciasRoutes, Menu_DiasRoutes, ProductosRoutes, Historial_Pedidos } from "./modules/index.js";
@@ -18,19 +16,16 @@ await connectDB();
     
     console.log('🟢 Conectado a PostgreSQL');
 
-    // ✅ EJECUTAR MIGRACIONES AUTOMÁTICAMENTE
     await runDatabaseMigrations();
     
-    // Verificar estado
     await checkDatabaseStatus();
 
-// Middlewares básicos
+
 app.use(corsMiddleware);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use("/uploads", express.static("uploads"));
 
-// Logging en desarrollo
 if (process.env.NODE_ENV === 'development') {
   app.use((req, res, next) => {
     console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
@@ -38,7 +33,6 @@ if (process.env.NODE_ENV === 'development') {
   });
 }
 
-// Health check básico
 app.get('/api/health', (req, res) => {
   res.status(200).json({
     status: 'OK',
@@ -47,7 +41,6 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Ruta de prueba
 app.get('/api', (req, res) => {
   res.json({
     message: '🚀 API del Sistema de Comandas',
@@ -56,15 +49,12 @@ app.get('/api', (req, res) => {
   });
 });
 
-// Iniciar servidor
 async function startServer() {
   try {
-    // Conectar a la base de datos
     await connectDB();
     
     console.log('🟢 Conectado a PostgreSQL');
 
-    // Configurar rutas de la API (sin pasar db como parámetro)
     app.use('/api/categorias', CategoriaRoutes);
     app.use('/api/usuarios', UsuarioRoutes);
     app.use('/api/ganancias', GananciasRoutes);
@@ -73,14 +63,8 @@ async function startServer() {
     app.use('/api/Menu_Dias', Menu_DiasRoutes);
     app.use('/api/Menu_Dias_Productos', Menu_Dias_ProductosRoutes);
     app.use('/api/Pedidos', PedidoRoutes);
-    app.use('/api/Pedidos_Productos', pedidosProductosRoutes )
-    // Agrega las demás rutas aquí...
-    // app.use('/api/productos', ProductosRoutes);
-    // app.use('/api/pedidos', PedidoRoutes);
+    app.use('/api/Pedidos_Productos', pedidosProductosRoutes );
 
-    
-
-    // Manejo de errores global
     app.use(errorHandler);
 
     const PORT = process.env.PORT || 4000;
@@ -98,7 +82,6 @@ async function startServer() {
   }
 }
 
-// Manejo de errores no capturados
 process.on('uncaughtException', (err) => {
   console.error('💥 UNCAUGHT EXCEPTION! Shutting down...');
   console.error(err.name, err.message);
