@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon src/app.js",
-    "//": "node src/app.js *nueva estructura"
+    "//": "node src/app.js *nueva estructura",
+    "seed": "node src/scripts/seed.js",
+    "seed:fresh": "node src/scripts/seed.js --fresh"
   },
   "dependencies": {
     "@faker-js/faker": "^9.9.0",

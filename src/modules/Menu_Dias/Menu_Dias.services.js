@@ -1,107 +1,101 @@
 import MenuDiasModel from '../models/Menu_Dias.model.js';
 
 class MenuDiasService {
-  
   // ============================================
   // UTILIDADES Y VALIDACIONES
   // ============================================
 
-  /**
-   * Validar coincidencia entre día de la semana y fecha
-   * @param {string} dia_semana - Día de la semana en español
-   * @param {string} fecha - Fecha en formato YYYY-MM-DD
-   * @returns {boolean} true si coinciden
-   */
-  validarDiaYFecha(dia_semana, fecha) {
-    const diasSemana = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
-    const fechaObj = new Date(fecha + 'T00:00:00');
-    const diaSemanaFecha = diasSemana[fechaObj.getDay()];
-    
-    return dia_semana.toLowerCase() === diaSemanaFecha;
+  static validarDiaYFecha(dia_semana, fecha) {
+    try {
+      const diasSemana = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
+      const fechaObj = new Date(fecha + 'T00:00:00');
+      const diaSemanaFecha = diasSemana[fechaObj.getDay()];
+      
+      return dia_semana.toLowerCase() === diaSemanaFecha;
+    } catch (error) {
+      return false;
+    }
   }
 
-  /**
-   * Obtener día de la semana a partir de una fecha
-   * @param {string} fecha - Fecha en formato YYYY-MM-DD
-   * @returns {string} Día de la semana en español
-   */
-  obtenerDiaSemana(fecha) {
-    const diasSemana = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
-    const fechaObj = new Date(fecha + 'T00:00:00');
-    return diasSemana[fechaObj.getDay()];
+  static obtenerDiaSemana(fecha) {
+    try {
+      const diasSemana = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
+      const fechaObj = new Date(fecha + 'T00:00:00');
+      return diasSemana[fechaObj.getDay()];
+    } catch (error) {
+      throw new Error('Error al obtener día de la semana: ' + error.message);
+    }
   }
 
-  /**
-   * Validar formato de fecha
-   * @param {string} fecha - Fecha a validar
-   * @returns {boolean} true si el formato es válido
-   */
-  validarFormatoFecha(fecha) {
-    const fechaRegex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!fechaRegex.test(fecha)) return false;
-    
-    const fechaObj = new Date(fecha);
-    return fechaObj instanceof Date && !isNaN(fechaObj);
+  static validarFormatoFecha(fecha) {
+    try {
+      const fechaRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (!fechaRegex.test(fecha)) return false;
+      
+      const fechaObj = new Date(fecha);
+      return fechaObj instanceof Date && !isNaN(fechaObj);
+    } catch (error) {
+      return false;
+    }
   }
 
-  /**
-   * Calcular primer y último día de la semana
-   * @param {Date} fecha - Fecha de referencia
-   * @returns {object} { primerDia, ultimoDia }
-   */
-  calcularSemana(fecha = new Date()) {
-    const diaSemana = fecha.getDay(); // 0 = domingo
-    
-    // Calcular lunes de la semana
-    const primerDia = new Date(fecha);
-    primerDia.setDate(fecha.getDate() - diaSemana + (diaSemana === 0 ? -6 : 1));
-    
-    // Calcular domingo de la semana
-    const ultimoDia = new Date(primerDia);
-    ultimoDia.setDate(primerDia.getDate() + 6);
+  static calcularSemana(fecha = new Date()) {
+    try {
+      const diaSemana = fecha.getDay(); // 0 = domingo
+      
+      const primerDia = new Date(fecha);
+      primerDia.setDate(fecha.getDate() - diaSemana + (diaSemana === 0 ? -6 : 1));
+      
+      const ultimoDia = new Date(primerDia);
+      ultimoDia.setDate(primerDia.getDate() + 6);
 
-    return {
-      primerDia: primerDia.toISOString().split('T')[0],
-      ultimoDia: ultimoDia.toISOString().split('T')[0]
-    };
+      return {
+        primerDia: primerDia.toISOString().split('T')[0],
+        ultimoDia: ultimoDia.toISOString().split('T')[0]
+      };
+    } catch (error) {
+      throw new Error('Error al calcular semana: ' + error.message);
+    }
   }
 
   // ============================================
   // OPERACIONES DE MENÚS
   // ============================================
 
-  /**
-   * Crear menú con validaciones completas
-   * @param {object} datos - Datos del menú
-   * @returns {Promise<object>} Menú creado
-   */
-  async crearMenu(datos) {
+  static async crearMenu(datos) {
     try {
       const { dia_semana, fecha, descripcion, activo, productos } = datos;
       
-      // Validar campos requeridos
       if (!dia_semana || !fecha) {
-        throw new Error('Los campos dia_semana y fecha son requeridos');
+        return {
+          success: false,
+          error: 'Los campos dia_semana y fecha son requeridos'
+        };
       }
 
-      // Validar formato de fecha
       if (!this.validarFormatoFecha(fecha)) {
-        throw new Error('Formato de fecha inválido. Use YYYY-MM-DD');
+        return {
+          success: false,
+          error: 'Formato de fecha inválido. Use YYYY-MM-DD'
+        };
       }
 
-      // Validar coincidencia día/fecha
       if (!this.validarDiaYFecha(dia_semana, fecha)) {
         const diaReal = this.obtenerDiaSemana(fecha);
-        throw new Error(`El día de la semana no coincide. La fecha ${fecha} es ${diaReal}`);
+        return {
+          success: false,
+          error: `El día de la semana no coincide. La fecha ${fecha} es ${diaReal}`
+        };
       }
 
-      // Verificar si ya existe menú para esa fecha
       const menuExistente = await MenuDiasModel.existePorFecha(fecha);
       if (menuExistente) {
-        throw new Error('Ya existe un menú para esta fecha');
+        return {
+          success: false,
+          error: 'Ya existe un menú para esta fecha'
+        };
       }
 
-      // Crear el menú
       const nuevoMenu = await MenuDiasModel.crear({
         dia_semana: dia_semana.toLowerCase(),
         fecha,
@@ -109,94 +103,112 @@ class MenuDiasService {
         activo: activo !== undefined ? activo : true
       });
 
-      // Agregar productos si se proporcionaron
       if (productos && Array.isArray(productos) && productos.length > 0) {
         await MenuDiasModel.agregarProductos(nuevoMenu.id, productos);
       }
 
-      return await MenuDiasModel.obtenerPorId(nuevoMenu.id);
+      const menuCompleto = await MenuDiasModel.obtenerPorId(nuevoMenu.id);
+      
+      return {
+        success: true,
+        data: menuCompleto,
+        message: 'Menú creado exitosamente'
+      };
     } catch (error) {
-      throw new Error(`Error al crear menú: ${error.message}`);
+      return {
+        success: false,
+        error: error.message
+      };
     }
   }
 
-  /**
-   * Actualizar menú con validaciones
-   * @param {number} id - ID del menú
-   * @param {object} datos - Datos a actualizar
-   * @returns {Promise<object>} Menú actualizado
-   */
-  async actualizarMenu(id, datos) {
+  static async actualizarMenu(id, datos) {
     try {
       const menuExiste = await MenuDiasModel.existe(id);
       if (!menuExiste) {
-        throw new Error('Menú no encontrado');
+        return {
+          success: false,
+          error: 'Menú no encontrado'
+        };
       }
 
       const { dia_semana, fecha, descripcion, activo } = datos;
 
-      // Validar formato de fecha si se proporciona
       if (fecha && !this.validarFormatoFecha(fecha)) {
-        throw new Error('Formato de fecha inválido. Use YYYY-MM-DD');
+        return {
+          success: false,
+          error: 'Formato de fecha inválido. Use YYYY-MM-DD'
+        };
       }
 
-      // Si se actualiza fecha y día, validar coincidencia
       if (fecha && dia_semana) {
         if (!this.validarDiaYFecha(dia_semana, fecha)) {
           const diaReal = this.obtenerDiaSemana(fecha);
-          throw new Error(`El día de la semana no coincide. La fecha ${fecha} es ${diaReal}`);
+          return {
+            success: false,
+            error: `El día de la semana no coincide. La fecha ${fecha} es ${diaReal}`
+          };
         }
       }
 
-      // Si solo se actualiza la fecha, calcular el día automáticamente
       let datosActualizados = { ...datos };
       if (fecha && !dia_semana) {
         datosActualizados.dia_semana = this.obtenerDiaSemana(fecha);
       }
 
-      // Si se actualiza la fecha, verificar duplicados
       if (fecha) {
         const menuEnFecha = await MenuDiasModel.existePorFecha(fecha, id);
         if (menuEnFecha) {
-          throw new Error('Ya existe otro menú para esta fecha');
+          return {
+            success: false,
+            error: 'Ya existe otro menú para esta fecha'
+          };
         }
       }
 
-      return await MenuDiasModel.actualizar(id, datosActualizados);
+      const menuActualizado = await MenuDiasModel.actualizar(id, datosActualizados);
+      
+      return {
+        success: true,
+        data: menuActualizado,
+        message: 'Menú actualizado exitosamente'
+      };
     } catch (error) {
-      throw new Error(`Error al actualizar menú: ${error.message}`);
+      return {
+        success: false,
+        error: error.message
+      };
     }
   }
 
-  /**
-   * Clonar menú a otra fecha
-   * @param {number} id - ID del menú original
-   * @param {string} nueva_fecha - Fecha destino
-   * @returns {Promise<object>} Menú clonado
-   */
-  async clonarMenu(id, nueva_fecha) {
+  static async clonarMenu(id, nueva_fecha) {
     try {
-      // Validar formato de fecha
       if (!this.validarFormatoFecha(nueva_fecha)) {
-        throw new Error('Formato de fecha inválido. Use YYYY-MM-DD');
+        return {
+          success: false,
+          error: 'Formato de fecha inválido. Use YYYY-MM-DD'
+        };
       }
 
       const menuOriginal = await MenuDiasModel.obtenerPorId(id);
       
       if (!menuOriginal) {
-        throw new Error('Menú original no encontrado');
+        return {
+          success: false,
+          error: 'Menú original no encontrado'
+        };
       }
 
-      // Verificar que no exista menú en la nueva fecha
       const menuExistente = await MenuDiasModel.existePorFecha(nueva_fecha);
       if (menuExistente) {
-        throw new Error('Ya existe un menú para la fecha destino');
+        return {
+          success: false,
+          error: 'Ya existe un menú para la fecha destino'
+        };
       }
 
-      // Obtener día de la semana de la nueva fecha
       const nuevo_dia_semana = this.obtenerDiaSemana(nueva_fecha);
 
-      // Crear nuevo menú
       const nuevoMenu = await MenuDiasModel.crear({
         dia_semana: nuevo_dia_semana,
         fecha: nueva_fecha,
@@ -204,7 +216,6 @@ class MenuDiasService {
         activo: menuOriginal.activo
       });
 
-      // Copiar productos si existen
       if (menuOriginal.productos && menuOriginal.productos.length > 0) {
         const productos = menuOriginal.productos.map(p => ({
           producto_id: p.producto_id,
@@ -214,22 +225,28 @@ class MenuDiasService {
         await MenuDiasModel.agregarProductos(nuevoMenu.id, productos);
       }
 
-      return await MenuDiasModel.obtenerPorId(nuevoMenu.id);
+      const menuCompleto = await MenuDiasModel.obtenerPorId(nuevoMenu.id);
+      
+      return {
+        success: true,
+        data: menuCompleto,
+        message: 'Menú clonado exitosamente'
+      };
     } catch (error) {
-      throw new Error(`Error al clonar menú: ${error.message}`);
+      return {
+        success: false,
+        error: error.message
+      };
     }
   }
 
-  /**
-   * Generar menús para una semana completa
-   * @param {string} fecha_inicio - Fecha de inicio (lunes preferentemente)
-   * @param {array} plantilla_productos - Productos para todos los días
-   * @returns {Promise<object>} Resultado de la operación
-   */
-  async generarMenusSemana(fecha_inicio, plantilla_productos = []) {
+  static async generarMenusSemana(fecha_inicio, plantilla_productos = []) {
     try {
       if (!this.validarFormatoFecha(fecha_inicio)) {
-        throw new Error('Formato de fecha inválido. Use YYYY-MM-DD');
+        return {
+          success: false,
+          error: 'Formato de fecha inválido. Use YYYY-MM-DD'
+        };
       }
 
       const menusCreados = [];
@@ -242,7 +259,6 @@ class MenuDiasService {
         const dia_semana = this.obtenerDiaSemana(fechaStr);
 
         try {
-          // Verificar si ya existe
           const existe = await MenuDiasModel.existePorFecha(fechaStr);
           if (existe) {
             errores.push({ 
@@ -260,7 +276,6 @@ class MenuDiasService {
             activo: true
           });
 
-          // Agregar productos si hay plantilla
           if (plantilla_productos && plantilla_productos.length > 0) {
             await MenuDiasModel.agregarProductos(nuevoMenu.id, plantilla_productos);
           }
@@ -277,37 +292,52 @@ class MenuDiasService {
       }
 
       return {
-        exito: menusCreados.length > 0,
-        menus_creados: menusCreados,
-        errores: errores,
-        total_creados: menusCreados.length,
-        total_errores: errores.length
+        success: true,
+        data: {
+          menus_creados: menusCreados,
+          errores: errores,
+          total_creados: menusCreados.length,
+          total_errores: errores.length
+        },
+        message: `Se crearon ${menusCreados.length} menús correctamente`
       };
     } catch (error) {
-      throw new Error(`Error al generar menús de la semana: ${error.message}`);
+      return {
+        success: false,
+        error: error.message
+      };
     }
   }
 
-  /**
-   * Activar o desactivar un menú
-   * @param {number} id - ID del menú
-   * @param {boolean} activo - Estado deseado
-   * @returns {Promise<object>} Menú actualizado
-   */
-  async cambiarEstado(id, activo) {
+  static async cambiarEstado(id, activo) {
     try {
       if (typeof activo !== 'boolean') {
-        throw new Error('El parámetro activo debe ser un booleano');
+        return {
+          success: false,
+          error: 'El parámetro activo debe ser un booleano'
+        };
       }
 
       const menuExiste = await MenuDiasModel.existe(id);
       if (!menuExiste) {
-        throw new Error('Menú no encontrado');
+        return {
+          success: false,
+          error: 'Menú no encontrado'
+        };
       }
 
-      return await MenuDiasModel.actualizar(id, { activo });
+      const menuActualizado = await MenuDiasModel.actualizar(id, { activo });
+      
+      return {
+        success: true,
+        data: menuActualizado,
+        message: `Menú ${activo ? 'activado' : 'desactivado'} exitosamente`
+      };
     } catch (error) {
-      throw new Error(`Error al cambiar estado del menú: ${error.message}`);
+      return {
+        success: false,
+        error: error.message
+      };
     }
   }
 
@@ -315,29 +345,31 @@ class MenuDiasService {
   // CONSULTAS ESPECIALES
   // ============================================
 
-  /**
-   * Obtener menú del día con validación
-   * @returns {Promise<object>} Menú de hoy
-   */
-  async obtenerMenuHoy() {
+  static async obtenerMenuHoy() {
     try {
       const menu = await MenuDiasModel.obtenerMenuHoy();
       
       if (!menu) {
-        throw new Error('No hay menú disponible para hoy');
+        return {
+          success: false,
+          error: 'No hay menú disponible para hoy'
+        };
       }
 
-      return menu;
+      return {
+        success: true,
+        data: menu,
+        message: 'Menú de hoy obtenido exitosamente'
+      };
     } catch (error) {
-      throw new Error(`Error al obtener menú de hoy: ${error.message}`);
+      return {
+        success: false,
+        error: error.message
+      };
     }
   }
 
-  /**
-   * Obtener menús de la semana actual
-   * @returns {Promise<array>} Menús de la semana
-   */
-  async obtenerMenusSemanaActual() {
+  static async obtenerMenusSemanaActual() {
     try {
       const { primerDia, ultimoDia } = this.calcularSemana();
 
@@ -348,23 +380,26 @@ class MenuDiasService {
       });
 
       return {
-        semana: {
-          inicio: primerDia,
-          fin: ultimoDia
+        success: true,
+        data: {
+          semana: {
+            inicio: primerDia,
+            fin: ultimoDia
+          },
+          total: menus.length,
+          menus
         },
-        total: menus.length,
-        menus
+        message: 'Menús de la semana obtenidos exitosamente'
       };
     } catch (error) {
-      throw new Error(`Error al obtener menús de la semana: ${error.message}`);
+      return {
+        success: false,
+        error: error.message
+      };
     }
   }
 
-  /**
-   * Obtener menús del mes actual
-   * @returns {Promise<object>} Menús del mes
-   */
-  async obtenerMenusMesActual() {
+  static async obtenerMenusMesActual() {
     try {
       const hoy = new Date();
       const primerDiaMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
@@ -379,26 +414,31 @@ class MenuDiasService {
       });
 
       return {
-        mes: hoy.toLocaleString('es', { month: 'long', year: 'numeric' }),
-        periodo: { desde: fecha_desde, hasta: fecha_hasta },
-        total: menus.length,
-        menus
+        success: true,
+        data: {
+          mes: hoy.toLocaleString('es', { month: 'long', year: 'numeric' }),
+          periodo: { desde: fecha_desde, hasta: fecha_hasta },
+          total: menus.length,
+          menus
+        },
+        message: 'Menús del mes obtenidos exitosamente'
       };
     } catch (error) {
-      throw new Error(`Error al obtener menús del mes: ${error.message}`);
+      return {
+        success: false,
+        error: error.message
+      };
     }
   }
 
-  /**
-   * Verificar disponibilidad de productos en el menú
-   * @param {number} menu_id - ID del menú
-   * @returns {Promise<object>} Estadísticas de disponibilidad
-   */
-  async verificarDisponibilidadProductos(menu_id) {
+  static async verificarDisponibilidadProductos(menu_id) {
     try {
       const menuExiste = await MenuDiasModel.existe(menu_id);
       if (!menuExiste) {
-        throw new Error('Menú no encontrado');
+        return {
+          success: false,
+          error: 'Menú no encontrado'
+        };
       }
 
       const productos = await MenuDiasModel.obtenerProductos(menu_id);
@@ -424,29 +464,33 @@ class MenuDiasService {
           }))
       };
 
-      return estadisticas;
+      return {
+        success: true,
+        data: estadisticas,
+        message: 'Disponibilidad verificada exitosamente'
+      };
     } catch (error) {
-      throw new Error(`Error al verificar disponibilidad: ${error.message}`);
+      return {
+        success: false,
+        error: error.message
+      };
     }
   }
 
-  /**
-   * Obtener resumen completo de menús
-   * @param {string} fecha_desde - Fecha inicial
-   * @param {string} fecha_hasta - Fecha final
-   * @returns {Promise<object>} Resumen completo
-   */
-  async obtenerResumen(fecha_desde, fecha_hasta) {
+  static async obtenerResumen(fecha_desde, fecha_hasta) {
     try {
       if (!this.validarFormatoFecha(fecha_desde) || !this.validarFormatoFecha(fecha_hasta)) {
-        throw new Error('Formato de fecha inválido. Use YYYY-MM-DD');
+        return {
+          success: false,
+          error: 'Formato de fecha inválido. Use YYYY-MM-DD'
+        };
       }
 
       const estadisticas = await MenuDiasModel.obtenerEstadisticas(fecha_desde, fecha_hasta);
       const productosMasUsados = await MenuDiasModel.obtenerProductosMasUsados(5);
       const menus = await MenuDiasModel.obtenerTodos({ fecha_desde, fecha_hasta });
 
-      return {
+      const resumen = {
         periodo: {
           desde: fecha_desde,
           hasta: fecha_hasta
@@ -464,8 +508,17 @@ class MenuDiasService {
           ? (menus.reduce((sum, m) => sum + parseInt(m.cantidad_productos || 0), 0) / menus.length).toFixed(2)
           : 0
       };
+
+      return {
+        success: true,
+        data: resumen,
+        message: 'Resumen obtenido exitosamente'
+      };
     } catch (error) {
-      throw new Error(`Error al obtener resumen: ${error.message}`);
+      return {
+        success: false,
+        error: error.message
+      };
     }
   }
 
@@ -473,30 +526,32 @@ class MenuDiasService {
   // OPERACIONES CON PRODUCTOS
   // ============================================
 
-  /**
-   * Sincronizar productos entre menús
-   * @param {number} menu_origen_id - ID del menú origen
-   * @param {number} menu_destino_id - ID del menú destino
-   * @param {boolean} reemplazar - Si true, elimina productos existentes primero
-   * @returns {Promise<object>} Menú actualizado
-   */
-  async sincronizarProductos(menu_origen_id, menu_destino_id, reemplazar = false) {
+  static async sincronizarProductos(menu_origen_id, menu_destino_id, reemplazar = false) {
     try {
       const menuOrigen = await MenuDiasModel.existe(menu_origen_id);
       const menuDestino = await MenuDiasModel.existe(menu_destino_id);
 
       if (!menuOrigen) {
-        throw new Error('Menú de origen no encontrado');
+        return {
+          success: false,
+          error: 'Menú de origen no encontrado'
+        };
       }
 
       if (!menuDestino) {
-        throw new Error('Menú de destino no encontrado');
+        return {
+          success: false,
+          error: 'Menú de destino no encontrado'
+        };
       }
 
       const productosOrigen = await MenuDiasModel.obtenerProductos(menu_origen_id);
       
       if (productosOrigen.length === 0) {
-        throw new Error('El menú de origen no tiene productos');
+        return {
+          success: false,
+          error: 'El menú de origen no tiene productos'
+        };
       }
 
       const productos = productosOrigen.map(p => ({
@@ -506,22 +561,29 @@ class MenuDiasService {
 
       await MenuDiasModel.agregarProductos(menu_destino_id, productos);
 
-      return await MenuDiasModel.obtenerPorId(menu_destino_id);
+      const menuActualizado = await MenuDiasModel.obtenerPorId(menu_destino_id);
+      
+      return {
+        success: true,
+        data: menuActualizado,
+        message: 'Productos sincronizados exitosamente'
+      };
     } catch (error) {
-      throw new Error(`Error al sincronizar productos: ${error.message}`);
+      return {
+        success: false,
+        error: error.message
+      };
     }
   }
 
-  /**
-   * Activar todos los productos de un menú
-   * @param {number} menu_id - ID del menú
-   * @returns {Promise<object>} Resultado
-   */
-  async activarTodosLosProductos(menu_id) {
+  static async activarTodosLosProductos(menu_id) {
     try {
       const menuExiste = await MenuDiasModel.existe(menu_id);
       if (!menuExiste) {
-        throw new Error('Menú no encontrado');
+        return {
+          success: false,
+          error: 'Menú no encontrado'
+        };
       }
 
       const productos = await MenuDiasModel.obtenerProductos(menu_id);
@@ -541,26 +603,31 @@ class MenuDiasService {
       }
 
       return {
-        total_productos: productos.length,
-        actualizados,
-        errores: errores.length,
-        detalles_errores: errores
+        success: true,
+        data: {
+          total_productos: productos.length,
+          actualizados,
+          errores: errores.length,
+          detalles_errores: errores
+        },
+        message: `${actualizados} productos activados exitosamente`
       };
     } catch (error) {
-      throw new Error(`Error al activar productos: ${error.message}`);
+      return {
+        success: false,
+        error: error.message
+      };
     }
   }
 
-  /**
-   * Desactivar todos los productos de un menú
-   * @param {number} menu_id - ID del menú
-   * @returns {Promise<object>} Resultado
-   */
-  async desactivarTodosLosProductos(menu_id) {
+  static async desactivarTodosLosProductos(menu_id) {
     try {
       const menuExiste = await MenuDiasModel.existe(menu_id);
       if (!menuExiste) {
-        throw new Error('Menú no encontrado');
+        return {
+          success: false,
+          error: 'Menú no encontrado'
+        };
       }
 
       const productos = await MenuDiasModel.obtenerProductos(menu_id);
@@ -580,13 +647,20 @@ class MenuDiasService {
       }
 
       return {
-        total_productos: productos.length,
-        actualizados,
-        errores: errores.length,
-        detalles_errores: errores
+        success: true,
+        data: {
+          total_productos: productos.length,
+          actualizados,
+          errores: errores.length,
+          detalles_errores: errores
+        },
+        message: `${actualizados} productos desactivados exitosamente`
       };
     } catch (error) {
-      throw new Error(`Error al desactivar productos: ${error.message}`);
+      return {
+        success: false,
+        error: error.message
+      };
     }
   }
 
@@ -594,15 +668,13 @@ class MenuDiasService {
   // MANTENIMIENTO Y LIMPIEZA
   // ============================================
 
-  /**
-   * Limpiar menús antiguos inactivos
-   * @param {number} dias_antiguedad - Días de antigüedad (default 90)
-   * @returns {Promise<object>} Resultado de la limpieza
-   */
-  async limpiarMenusAntiguos(dias_antiguedad = 90) {
+  static async limpiarMenusAntiguos(dias_antiguedad = 90) {
     try {
       if (dias_antiguedad < 30) {
-        throw new Error('Los días de antigüedad deben ser al menos 30');
+        return {
+          success: false,
+          error: 'Los días de antigüedad deben ser al menos 30'
+        };
       }
 
       const fechaLimite = new Date();
@@ -631,30 +703,32 @@ class MenuDiasService {
       }
 
       return {
-        fecha_limite: fechaLimiteStr,
-        dias_antiguedad,
-        total_encontrados: menusAntiguos.length,
-        eliminados,
-        errores: errores.length,
-        detalles_errores: errores
+        success: true,
+        data: {
+          fecha_limite: fechaLimiteStr,
+          dias_antiguedad,
+          total_encontrados: menusAntiguos.length,
+          eliminados,
+          errores: errores.length,
+          detalles_errores: errores
+        },
+        message: `${eliminados} menús antiguos eliminados`
       };
     } catch (error) {
-      throw new Error(`Error al limpiar menús antiguos: ${error.message}`);
+      return {
+        success: false,
+        error: error.message
+      };
     }
   }
 
-  /**
-   * Validar integridad de menús (fechas, productos, etc)
-   * @returns {Promise<object>} Reporte de validación
-   */
-  async validarIntegridad() {
+  static async validarIntegridad() {
     try {
       const menus = await MenuDiasModel.obtenerTodos({});
       
       const problemas = [];
 
       for (const menu of menus) {
-        // Verificar coincidencia día/fecha
         if (!this.validarDiaYFecha(menu.dia_semana, menu.fecha)) {
           problemas.push({
             menu_id: menu.id,
@@ -664,7 +738,6 @@ class MenuDiasService {
           });
         }
 
-        // Verificar menús sin productos
         if (parseInt(menu.cantidad_productos) === 0) {
           problemas.push({
             menu_id: menu.id,
@@ -676,15 +749,22 @@ class MenuDiasService {
       }
 
       return {
-        total_menus: menus.length,
-        con_problemas: problemas.length,
-        sin_problemas: menus.length - problemas.length,
-        problemas
+        success: true,
+        data: {
+          total_menus: menus.length,
+          con_problemas: problemas.length,
+          sin_problemas: menus.length - problemas.length,
+          problemas
+        },
+        message: 'Validación completada exitosamente'
       };
     } catch (error) {
-      throw new Error(`Error al validar integridad: ${error.message}`);
+      return {
+        success: false,
+        error: error.message
+      };
     }
   }
 }
 
-export default new MenuDiasService();
+export default MenuDiasService;
